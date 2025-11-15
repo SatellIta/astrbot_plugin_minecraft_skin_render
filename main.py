@@ -17,11 +17,11 @@ VALID_TYPES = ["body", "head", "avatar", "skin"]
 
 # 注册插件
 @register(
-    name="MCSkinRendererUnified",
-    author="SatellIta",
-    description="使用 Starlight API 异步获取 Minecraft 皮肤的多种渲染图和动作",
-    version="1.0.0",
-    repo_url="https://github.com/SatellIta/astrbot_plugin_minecraft_skin_render"
+    "MCSkinRender",
+    "SatellIta",
+    "使用 Starlight API 异步获取 Minecraft 皮肤的多种渲染图和动作",
+    "1.0.0",
+    "https://github.com/SatellIta/astrbot_plugin_minecraft_skin_render"
 )
 class MCSkinPlugin(Star):
     def __init__(self, context: Context):
