@@ -36,6 +36,78 @@ class MCSkinPlugin(Star):
         # 在插件初始化时创建一个可复用的 aiohttp.ClientSession
         self.session = aiohttp.ClientSession()
 
+    async def _get_player_uuid(self, username: str) -> tuple[str | None, str | None]:
+        """
+        通过 Mojang API 获取玩家 UUID
+        
+        Args:
+            username: 玩家用户名
+            
+        Returns:
+            tuple[uuid, error_msg]: 成功返回 (uuid, None)，失败返回 (None, error_msg)
+        """
+        mojang_url = MOJANG_API_URL.format(username=username)
+        logger.info(f"正在为 {username} 异步查询 UUID...")
+        
+        try:
+            async with self.session.get(mojang_url) as response:
+                if response.status != 200:
+                    logger.warning(f"Mojang API 玩家 {username} 未找到 (状态: {response.status})。")
+                    return None, f"错误：找不到玩家 '{username}'。"
+                
+                player_data = await response.json()
+                uuid = player_data.get("id")
+                
+                if not uuid:
+                    logger.error(f"Mojang API 响应中未找到 {username} 的 UUID。")
+                    return None, "获取玩家数据时出错。"
+                
+                logger.info(f"成功获取 {username} 的 UUID: {uuid}")
+                return uuid, None
+                
+        except aiohttp.ClientError as e:
+            logger.error(f"为 {username} 获取 UUID 时发生 aiohttp ClientError: {e}")
+            return None, "查询玩家信息时发生网络错误，请稍后再试。"
+        except Exception as e:
+            logger.error(f"获取 {username} 的 UUID 时发生未知错误: {e}", exc_info=True)
+            return None, "查询玩家信息时发生内部错误。"
+
+    def _build_render_url(self, rendertype: str, uuid: str) -> str:
+        """
+        构建 Starlight 渲染 API 的 URL
+        
+        Args:
+            rendertype: 渲染类型
+            uuid: 玩家 UUID
+            
+        Returns:
+            完整的渲染 URL
+        """
+        rendercrop = SKIN_RENDERCROP if rendertype == "skin" else DEFAULT_RENDERCROP
+        return STARLIGHT_RENDER_URL.format(
+            rendertype=rendertype,
+            uuid=uuid,
+            rendercrop=rendercrop
+        )
+
+    def _validate_rendertype(self, rendertype: str) -> tuple[bool, str | None]:
+        """
+        验证渲染类型是否有效
+        
+        Args:
+            rendertype: 要验证的渲染类型（小写）
+            
+        Returns:
+            tuple[is_valid, error_msg]: 有效返回 (True, None)，无效返回 (False, error_msg)
+        """
+        if rendertype not in VALID_RENDERTYPES:
+            valid_types_sample = ", ".join(sorted(VALID_RENDERTYPES)[:5]) + "..."
+            error_msg = (f"未知的渲染类型 '{rendertype}'。\n"
+                        f"有效类型例如: {valid_types_sample}\n"
+                        f"输入 /skinhelp 查看完整列表。")
+            return False, error_msg
+        return True, None
+
     @filter.command("skin")
     async def get_skin(
         self, 
@@ -43,59 +115,38 @@ class MCSkinPlugin(Star):
         username: str, # 必填参数
         rendertype: str = DEFAULT_RENDERTYPE, # 可选的第一个参数
     ):
-        # 1. 解析参数
+        """
+        获取 Minecraft 玩家皮肤的渲染图
+        
+        Args:
+            event: 消息事件
+            username: 玩家用户名
+            rendertype: 渲染类型，默认为 'default'
+        """
+        # 1. 验证渲染类型
         rendertype_lower = rendertype.lower()
-
-        # 2. 验证 rendertype
-        if rendertype_lower not in VALID_RENDERTYPES:
-            # 显示前5个类型作为示例
-            valid_types_sample = ", ".join(sorted(VALID_RENDERTYPES)[:5]) + "..."
-            yield event.plain_result(f"未知的渲染类型 '{rendertype_lower}'。\n"
-                                     f"有效类型例如: {valid_types_sample}\n"
-                                     f"输入 /skinhelp 查看完整列表。")
+        is_valid, error_msg = self._validate_rendertype(rendertype_lower)
+        if not is_valid:
+            yield event.plain_result(error_msg)
             return
         
-        try:
-            # 3. 异步调用 Mojang API 获取 UUID
-            mojang_url = MOJANG_API_URL.format(username=username)
-            logger.info(f"正在为 {username} (Type: {rendertype_lower}) 异步查询 UUID...")
-            
-            async with self.session.get(mojang_url) as response:
-                if response.status != 200:
-                    logger.warning(f"Mojang API 玩家 {username} 未找到 (状态: {response.status})。")
-                    yield event.plain_result(f"错误：找不到玩家 '{username}'。")
-                    return
-                player_data = await response.json()
-                uuid = player_data.get("id")
-                if not uuid:
-                    logger.error(f"Mojang API 响应中未找到 {username} 的 UUID。")
-                    yield event.plain_result("获取玩家数据时出错。")
-                    return
-                logger.info(f"成功获取 {username} 的 UUID: {uuid}")
-
-            # 4. 构建渲染 URL
-            rendercrop = SKIN_RENDERCROP if rendertype_lower == "skin" else DEFAULT_RENDERCROP
-            render_url = STARLIGHT_RENDER_URL.format(
-                rendertype=rendertype_lower,
-                uuid=uuid,
-                rendercrop=rendercrop
-            )
-            render_desc = f"'{rendertype_lower}' 渲染"
-
-            logger.info(f"为 {username} 生成 URL: {render_url}")
-            
-            chain = [
-                Comp.Plain(f"这是 {username} 的 {render_desc}：\n"),
-                Comp.Image.fromURL(url=render_url) # 直接使用 URL
-            ]
-            yield event.chain_result(chain)
-
-        except aiohttp.ClientError as e:
-            logger.error(f"为 {username} 获取皮肤时发生 aiohttp ClientError: {e}")
-            yield event.plain_result(f"查询时发生网络错误，请稍后再试。")
-        except Exception as e:
-            logger.error(f"处理 /skin {username} 时发生未知错误: {e}", exc_info=True)
-            yield event.plain_result(f"发生了一个内部错误。")
+        # 2. 获取玩家 UUID
+        uuid, error_msg = await self._get_player_uuid(username)
+        if error_msg:
+            yield event.plain_result(error_msg)
+            return
+        
+        # 3. 构建渲染 URL
+        render_url = self._build_render_url(rendertype_lower, uuid)
+        logger.info(f"为 {username} 生成渲染 URL: {render_url}")
+        
+        # 4. 发送结果
+        render_desc = f"'{rendertype_lower}' 渲染"
+        chain = [
+            Comp.Plain(f"这是 {username} 的 {render_desc}：\n"),
+            Comp.Image.fromURL(url=render_url)
+        ]
+        yield event.chain_result(chain)
 
     # /skinhelp 指令，合并了用法和类型列表
     @filter.command("skinhelp")
