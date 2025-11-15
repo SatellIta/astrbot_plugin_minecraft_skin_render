@@ -20,29 +20,16 @@ git clone https://github.com/SatellIta/astrbot_plugin_minecraft_skin_render
 
 # 🚀 使用说明
 核心命令
-/skin <username> [type|pose] [pose]
+`/skin <username> [pose]`
 
 参数
 <username>: 必需。玩家名称（带空格请使用引号，如 "Steve Jobs"）。
 
-[type|pose]: 可选。渲染类型或动作快捷方式。
+[pose]：可选。默认动作为default
 
-类型: body (默认), head, avatar, skin。
-
-快捷方式: 如果直接输入动作名 (如 walking)，则默认为 body 类型。
-
-[pose]: 可选。仅在 body 或 head 类型时生效。
-
-可用动作 (Poses)
-default, walking, marching, crouching, cheering, archer, lunging, sleeping, dead
+可用pose列表，请使用 `/skinhelp` 指令查看可用动作
 
 💡 示例
 /skin Notch (默认全身渲染)
 
 /skin Notch walking (行走动作的全身渲染 - 快捷方式)
-
-/skin Notch body archer (射箭动作的全身渲染 - 标准方式)
-
-/skin Notch head crouching (潜行姿势的头部渲染)
-
-/skin Notch avatar (2D头像)
