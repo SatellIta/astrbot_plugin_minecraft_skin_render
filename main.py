@@ -7,6 +7,7 @@ from astrbot.api import logger
 # API URLs
 MOJANG_API_URL = "https://api.mojang.com/users/profiles/minecraft/{username}"
 STARLIGHT_RENDER_URL = "https://starlightskins.lunareclipse.studio/render/{rendertype}/{uuid}/{rendercrop}"
+WALLPAPER_API_URL = "https://starlightskins.lunareclipse.studio/render/wallpaper/{wallpaper_id}/{playernames}"
 
 # 有效的渲染类型（使用 set 以提高查找效率）
 VALID_RENDERTYPES = {
@@ -17,10 +18,20 @@ VALID_RENDERTYPES = {
     "high_ground", "clown", "bitzel", "pixel", "ornament", "skin", "profile"
 }
 
+# 壁纸配置（壁纸ID -> 支持的最大玩家数）
+WALLPAPER_CONFIGS = {
+    "herobrine_hill": 1,
+    "quick_hide": 3,
+    "malevolent": 1,
+    "off_to_the_stars": 1,
+    "wheat": 1
+}
+
 # 默认渲染配置
 DEFAULT_RENDERTYPE = "default"
 DEFAULT_RENDERCROP = "full"
 SKIN_RENDERCROP = "default"  # skin 类型使用的 rendercrop
+DEFAULT_WALLPAPER = "herobrine_hill"  # 默认壁纸
 
 # 注册插件
 @register(
@@ -108,6 +119,24 @@ class MCSkinPlugin(Star):
             return False, error_msg
         return True, None
 
+    def _validate_wallpaper(self, wallpaper_id: str) -> tuple[bool, str | None, int]:
+        """
+        验证壁纸ID是否有效
+        
+        Args:
+            wallpaper_id: 要验证的壁纸ID（小写）
+            
+        Returns:
+            tuple[is_valid, error_msg, max_players]: 有效返回 (True, None, max_players)，无效返回 (False, error_msg, 0)
+        """
+        if wallpaper_id not in WALLPAPER_CONFIGS:
+            available_wallpapers = ", ".join(sorted(WALLPAPER_CONFIGS.keys()))
+            error_msg = (f"未知的壁纸类型 '{wallpaper_id}'。\n"
+                        f"可用壁纸: {available_wallpapers}\n"
+                        f"输入 /skinhelp 查看详细信息。")
+            return False, error_msg, 0
+        return True, None, WALLPAPER_CONFIGS[wallpaper_id]
+
     @filter.command("skin")
     async def get_skin(
         self, 
@@ -148,6 +177,95 @@ class MCSkinPlugin(Star):
         ]
         yield event.chain_result(chain)
 
+    @filter.command("wallpaper")
+    async def get_wallpaper(
+        self,
+        event: AstrMessageEvent,
+        wallpaper_id: str = DEFAULT_WALLPAPER,  # 第一个参数：壁纸ID
+        player1: str = None,  # 第一个玩家（可选）
+        player2: str = None,  # 第二个玩家（可选）
+        player3: str = None   # 第三个玩家（可选）
+    ):
+        """
+        获取 Minecraft 壁纸
+        
+        Args:
+            event: 消息事件
+            wallpaper_id: 壁纸ID，默认为 'herobrine_hill'
+            player1: 第一个玩家名称（可选）
+            player2: 第二个玩家名称（可选）
+            player3: 第三个玩家名称（可选）
+        """
+        # 1. 验证壁纸ID
+        wallpaper_lower = wallpaper_id.lower()
+        is_valid, error_msg, max_players = self._validate_wallpaper(wallpaper_lower)
+        if not is_valid:
+            yield event.plain_result(error_msg)
+            return
+        
+        # 2. 收集所有非空的玩家名称
+        usernames = [p for p in [player1, player2, player3] if p is not None]
+        
+        # 3. 检查玩家参数
+        if not usernames:
+            yield event.plain_result(
+                f"错误：壁纸 '{wallpaper_lower}' 至少需要1个玩家名称。\n"
+                f"用法：/wallpaper {wallpaper_lower} <玩家名1> [玩家名2] [玩家名3]\n"
+                f"该壁纸最多支持 {max_players} 个玩家。"
+            )
+            return
+        
+        # 4. 检查玩家数量上限
+        actual_usernames = usernames
+        warning_msg = ""
+        if len(actual_usernames) > max_players:
+            warning_msg = f"⚠️ 注意：壁纸 '{wallpaper_lower}' 最多支持 {max_players} 个玩家，已自动截取前 {max_players} 个玩家。\n\n"
+            actual_usernames = actual_usernames[:max_players]
+        
+        # 4. 将所有玩家名称转换为UUID
+        player_uuids = []
+        failed_players = []
+        
+        for username in actual_usernames:
+            uuid, error_msg = await self._get_player_uuid(username)
+            if error_msg:
+                failed_players.append(username)
+                logger.warning(f"无法获取玩家 {username} 的 UUID，跳过该玩家")
+            else:
+                player_uuids.append(uuid)
+        
+        # 5. 检查是否有成功获取的UUID
+        if not player_uuids:
+            error_list = "\n".join([f"• {player}" for player in failed_players])
+            yield event.plain_result(
+                f"错误：无法获取任何玩家的 UUID。\n"
+                f"失败的玩家：\n{error_list}"
+            )
+            return
+        
+        # 6. 如果有部分玩家失败，添加警告信息
+        if failed_players:
+            failed_list = ", ".join(failed_players)
+            warning_msg += f"⚠️ 以下玩家未找到，已跳过：{failed_list}\n\n"
+        
+        # 7. 构建壁纸URL（使用UUID，用逗号分隔）
+        player_uuids_path = ",".join(player_uuids)
+        wallpaper_url = WALLPAPER_API_URL.format(
+            wallpaper_id=wallpaper_lower,
+            playernames=player_uuids_path
+        )
+        
+        logger.info(f"为壁纸 '{wallpaper_lower}' 生成 URL（{len(player_uuids)} 个玩家）: {wallpaper_url}")
+        
+        # 8. 发送结果
+        success_players = [name for name in actual_usernames if name not in failed_players]
+        players_desc = ", ".join(success_players)
+        chain = [
+            Comp.Plain(f"{warning_msg}这是壁纸 '{wallpaper_lower}' (玩家: {players_desc})：\n"),
+            Comp.Image.fromURL(url=wallpaper_url)
+        ]
+        yield event.chain_result(chain)
+
     # /skinhelp 指令，合并了用法和类型列表
     @filter.command("skinhelp")
     async def skin_help(self, event: AstrMessageEvent):
@@ -156,13 +274,12 @@ class MCSkinPlugin(Star):
         显示 /skin 指令的详细帮助和所有可用的渲染类型
         """
         
-        # 1. 帮助文本
+        # 1. /skin 指令帮助
         help_text = (
-            "--- Minecraft 皮肤渲染插件帮助 ---\n"
-            "指令用法：\n"
-            "/skin <username> [rendertype]\n\n"
+            "--- Minecraft 皮肤渲染插件帮助 ---\n\n"
+            "【指令1】/skin <username> [rendertype]\n"
             "参数说明：\n"
-            "  <username>: 必需。玩家名称（如果名称含空格，请使用引号，例如 \"Steve Jobs\"）。\n"
+            "  <username>: 必需。玩家名称（如果名称含空格，请使用引号）。\n"
             f"  [rendertype]: 可选。渲染类型（默认为 '{DEFAULT_RENDERTYPE}'）。\n\n"
             "--- 所有可用的 [rendertype] 列表 ---\n"
         )
@@ -170,8 +287,24 @@ class MCSkinPlugin(Star):
         # 2. 渲染类型列表（按字母顺序排序）
         types_str = ", ".join(sorted(VALID_RENDERTYPES))
         
-        # 3. 发送合并后的帮助信息
-        yield event.plain_result(help_text + types_str)
+        # 3. /wallpaper 指令帮助
+        wallpaper_help = (
+            "\n\n【指令2】/wallpaper [wallpaper_id] <玩家名1> [玩家名2] [玩家名3]\n"
+            "参数说明：\n"
+            f"  [wallpaper_id]: 可选。壁纸ID（默认为 '{DEFAULT_WALLPAPER}'）。\n"
+            "  <玩家名...>: 必需。至少1个玩家名称，不同壁纸支持不同数量的玩家。\n\n"
+            "--- 可用的壁纸ID及玩家上限 ---\n"
+        )
+        
+        # 4. 壁纸列表（按字母顺序排序，带上限说明）
+        wallpaper_list = []
+        for wp_id, max_p in sorted(WALLPAPER_CONFIGS.items()):
+            wallpaper_list.append(f"  • {wp_id} (最多 {max_p} 个玩家)")
+        wallpapers_str = "\n".join(wallpaper_list)
+        
+        # 5. 发送合并后的帮助信息
+        full_help = help_text + types_str + wallpaper_help + wallpapers_str
+        yield event.plain_result(full_help)
 
     async def terminate(self):
         """插件卸载/停止时，异步关闭 session"""
