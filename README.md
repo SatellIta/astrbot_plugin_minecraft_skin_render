@@ -21,11 +21,11 @@ git clone https://github.com/SatellIta/astrbot_plugin_minecraft_skin_render
 # 🚀 使用说明
 
 ## 指令1：获取皮肤渲染
-`/skin <username> [rendertype]`
+`/skin [rendertype] <username>`
 
 ### 参数
-- `<username>`: 必需。玩家名称（带空格请使用引号，如 "Steve Jobs"）
 - `[rendertype]`: 可选。渲染类型，默认为 `default`
+- `<username>`: 必需。玩家名称（带空格请使用引号，如 "Steve Jobs"）
 
 ### 示例
 - `/skin Notch` - 默认全身渲染
