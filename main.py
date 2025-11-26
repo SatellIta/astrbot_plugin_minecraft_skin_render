@@ -182,9 +182,9 @@ class MCSkinPlugin(Star):
                     file_component = component
                     break
             
-            #if not file_component:
+            if not file_component:
             #    await event.send(event.plain_result("请发送文件，而不是文本消息。"))
-            #    return
+                return
 
             local_path = await file_component.get_file()
 
