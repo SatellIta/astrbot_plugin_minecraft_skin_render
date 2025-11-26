@@ -190,13 +190,13 @@ class MCSkinPlugin(Star):
 
             try:
                 # 根据配置决定使用本地文件服务还是公共中转服务
-                if self.config.use_transfer_sh:
+                if self.config.get("use_file_transfer"):
                     # 使用公共中转服务 (tmpfiles.org)
-                    logger.info("use_transfer_sh 已开启，使用 tmpfiles.org 上传...")
+                    logger.info("use_file_transfer 已开启，使用 tmpfiles.org 上传...")
                     stable_url = await transfer.upload_to_tmpfiles(self.session, local_path)
                 else:
                     # 使用内置文件服务
-                    logger.info("use_transfer_sh 已关闭，使用内置文件服务注册...")
+                    logger.info("use_file_transfer 已关闭，使用内置文件服务注册...")
                     stable_url = await file_component.register_to_file_service()
 
                 if not stable_url:
