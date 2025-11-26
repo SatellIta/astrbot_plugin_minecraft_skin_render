@@ -29,8 +29,7 @@ git clone https://github.com/SatellIta/astrbot_plugin_minecraft_skin_render
 
 ### 示例
 - `/skin Notch` - 默认全身渲染
-- `/skin Notch walking` - 行走动作的全身渲染
-- `/skin jeb_ cheering` - 欢呼动作的全身渲染
+- `/skin walking Notch` - 行走动作的全身渲染
 
 ---
 
@@ -55,5 +54,28 @@ git clone https://github.com/SatellIta/astrbot_plugin_minecraft_skin_render
 
 ---
 
+## 指令3：自定义模型渲染
+`/customskin <username> [camera_preset] [focal_preset]`
+
+### 参数
+- `<username>`: 必需。玩家名称。
+- `[camera_preset]`: 可选。相机位置的预设名称或自定义JSON。
+- `[focal_preset]`: 可选。焦点位置的预设名称或自定义JSON。
+
+### 流程
+1. 发送指令，例如 `/customskin Notch`。
+2. 机器人会提示你发送一个 `.obj` 模型文件。
+3. 在15秒内上传你的模型文件。
+4. 机器人将使用你的模型和指定玩家的皮肤进行渲染。
+
+### 示例
+- `/customskin Notch` - 使用默认相机和焦点。
+- `/customskin Notch front` - 使用名为 `front` 的相机预设。
+- `/customskin Notch front top` - 同时使用相机和焦点的预设。
+- `/customskin Notch '{"x":0,"y":20,"z":-50}'` - 使用自定义的JSON作为相机位置。
+
+---
+
 ## 帮助命令
-`/skinhelp` - 查看所有可用的渲染类型和壁纸列表
+- `/skinhelp` - 查看所有可用的渲染类型和壁纸列表。
+- `/customskinhelp` - 查看所有可用的相机和焦点预设及其详细数据。
