@@ -25,7 +25,7 @@ git clone https://github.com/SatellIta/astrbot_plugin_minecraft_skin_render
 
 ### 参数
 - `[rendertype]`: 可选。渲染类型，默认为 `default`
-- `<username>`: 必需。玩家名称（带空格请使用引号，如 "Steve Jobs"）
+- `<username>`: 必需。玩家名称或者UUID
 
 ### 示例
 - `/skin Notch` - 默认全身渲染
@@ -58,7 +58,7 @@ git clone https://github.com/SatellIta/astrbot_plugin_minecraft_skin_render
 `/customskin <username> [camera_preset] [focal_preset]`
 
 ### 参数
-- `<username>`: 必需。玩家名称。
+- `<username>`: 必需。玩家名称或者UUID。
 - `[camera_preset]`: 可选。相机位置的预设名称或自定义JSON。
 - `[focal_preset]`: 可选。焦点位置的预设名称或自定义JSON。
 

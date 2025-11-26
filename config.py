@@ -1,5 +1,6 @@
 # API URLs
 MOJANG_API_URL = "https://api.mojang.com/users/profiles/minecraft/{username}"
+MOJANG_API_UUID_URL = "https://api.minecraftservices.com/minecraft/profile/lookup/{uuid}"
 STARLIGHT_RENDER_URL = "https://starlightskins.lunareclipse.studio/render/{rendertype}/{uuid}/{rendercrop}"
 WALLPAPER_API_URL = "https://starlightskins.lunareclipse.studio/render/wallpaper/{wallpaper_id}/{playernames}"
 

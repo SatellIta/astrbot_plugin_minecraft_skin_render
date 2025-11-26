@@ -15,7 +15,7 @@ from . import actions, config, utils, help, transfer
     "MCSkinRender",
     "SatellIta",
     "使用 Starlight API 异步获取 Minecraft 皮肤的多种渲染图和动作",
-    "1.1.0",
+    "1.1.1",
     "https://github.com/SatellIta/astrbot_plugin_minecraft_skin_render"
 )
 class MCSkinPlugin(Star):

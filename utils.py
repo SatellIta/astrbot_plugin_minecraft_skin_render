@@ -1,21 +1,46 @@
 import aiohttp
 import os
 import asyncio
+import uuid as uuid_lib
 from astrbot.api import logger
 
 from . import config
 
 async def get_player_uuid(session: aiohttp.ClientSession, username: str) -> tuple[str | None, str | None]:
     """
-    通过 Mojang API 获取玩家 UUID
+    通过 Mojang API 获取玩家 UUID，如果传入的已经是UUID，则直接格式化并返回。
     
     Args:
         session: aiohttp.ClientSession
-        username: 玩家用户名
+        username: 玩家用户名或UUID
         
     Returns:
         tuple[uuid, error_msg]: 成功返回 (uuid, None)，失败返回 (None, error_msg)
     """
+    # 检查传入的 username 是否已经是 UUID
+    try:
+        # 尝试将输入解析为UUID对象
+        parsed_uuid = uuid_lib.UUID(username)
+        # 如果成功，格式化为32位无连字符的字符串
+        uuid_hex = parsed_uuid.hex
+    
+        # 验证UUID是否存在
+        validation_url = config.MOJANG_API_UUID_URL.format(uuid=uuid_hex)
+        async with session.get(validation_url) as response:
+            if response.status == 200:
+                logger.info(f"UUID '{parsed_uuid}' 验证成功，直接使用: {uuid_hex}")
+                return uuid_hex, None
+            elif response.status == 404:
+                logger.warning(f"UUID '{parsed_uuid}' 格式正确但不存在。")
+                return None, f"错误：UUID '{username}' 对应的玩家不存在。"
+            else:
+                logger.error(f"验证UUID时发生API错误，状态码: {response.status}")
+                return None, "验证UUID时发生网络错误。"
+    
+    except ValueError:
+        # 如果不是有效的UUID，则继续执行API查询
+        logger.info(f"输入 '{username}' 不是UUID，将作为玩家名进行查询。")
+
     mojang_url = config.MOJANG_API_URL.format(username=username)
     logger.info(f"正在为 {username} 异步查询 UUID...")
     

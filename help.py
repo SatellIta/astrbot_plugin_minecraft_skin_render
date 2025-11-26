@@ -15,7 +15,7 @@ def get_help_text() -> str:
         "--- 所有可用的 [rendertype] 列表 ---\n"
         "用法2: /skin <玩家名称>\n"
         "  » 示例: /skin Notch\n"
-        f"  <玩家名称>: 必需。玩家的 Minecraft ID。\n"
+        f"  <玩家名称>: 必需。玩家的 Minecraft ID 或者 UUID。\n"
     )
     
     # 2. 渲染类型列表（按字母顺序排序）

@@ -1,6 +1,6 @@
 name: astrbot_plugin_minecraft_skin_render
 display_name: MC皮肤渲染插件
 desc:  用于获取 Minecraft 玩家皮肤的 3D 渲染图（支持自定义动作）、2D 头像或皮肤文件
-version: v1.1.0
+version: v1.1.1
 author: SatellIta
 repo: https://github.com/SatellIta/astrbot_plugin_minecraft_skin_render
