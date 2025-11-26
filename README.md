@@ -68,6 +68,12 @@ git clone https://github.com/SatellIta/astrbot_plugin_minecraft_skin_render
 3. 在15秒内上传你的模型文件。
 4. 机器人将使用你的模型和指定玩家的皮肤进行渲染。
 
+### 文件上传说明
+为了让渲染API能够访问你上传的模型文件，此指令需要一个公开的文件URL。
+
+- **默认行为**: 插件会默认将你的 `.obj` 文件上传到公共临时文件服务 (`tmpfiles.org`)，并设置一个短暂的过期时间。这对于没有公网IP的用户非常方便。
+- **推荐配置**: 为了获得最佳的稳定性和隐私保护，强烈建议为你的 AstrBot 配置一个公网可访问的回调地址 (`配置文件-系统-对外可达的回调接口地址` 或者直接修改配置文件 `callback_api_base`)。配置完成后，你可以在本插件的设置中禁用文件中转服务 (`"use_transfer_sh": false`)。这样，插件将使用机器人自带的文件服务，而不会将你的文件上传到第三方网站。
+
 ### 示例
 - `/customskin Notch` - 使用默认相机和焦点。
 - `/customskin Notch front` - 使用名为 `front` 的相机预设。

@@ -68,7 +68,7 @@ async def upload_and_render_custom_skin(
     logger.info(f"为 {username} 构建的自定义渲染 URL: {final_url}")
 
     chain = [
-        Comp.Plain(f"这是为 {username} 使用自定义模型生成的渲染图：\n⚠️ 如果是空白图片，请检查上传的模型与渲染皮肤的类型是否一致（苗条或者标准）\n"),
+        Comp.Plain(f"这是为 {username} 使用自定义模型生成的渲染图：\n⚠️ 如果是空白图片，请检查上传的模型与渲染皮肤的类型是否一致（标准或纤细）\n"),
         Comp.Image.fromURL(url=final_url),
     ]
     return chain

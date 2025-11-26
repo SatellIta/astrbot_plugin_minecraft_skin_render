@@ -5,23 +5,24 @@ import astrbot.api.message_components as Comp
 from astrbot.api.message_components import File
 from astrbot.api.event import filter, AstrMessageEvent
 from astrbot.api.star import Context, Star, register
-from astrbot.api import logger
+from astrbot.api import logger, AstrBotConfig
 from astrbot.core.utils.session_waiter import session_waiter, SessionController
 
-from . import actions, config, utils, help
+from . import actions, config, utils, help, transfer
 
 # 注册插件
 @register(
     "MCSkinRender",
     "SatellIta",
     "使用 Starlight API 异步获取 Minecraft 皮肤的多种渲染图和动作",
-    "1.0.3",
+    "1.1.0",
     "https://github.com/SatellIta/astrbot_plugin_minecraft_skin_render"
 )
 class MCSkinPlugin(Star):
-    def __init__(self, context: Context):
+    def __init__(self, context: Context, config: AstrBotConfig):
         super().__init__(context)
         # 在插件初始化时创建一个可复用的 aiohttp.ClientSession
+        self.config = config
         self.session = aiohttp.ClientSession()
 
     @filter.command("skin")
@@ -188,17 +189,20 @@ class MCSkinPlugin(Star):
             local_path = await file_component.get_file()
 
             try:
-                # 1. 将文件注册到文件服务，获取稳定可访问的 URL
-                logger.info(f"收到文件: {file_component.name}，正在注册到文件服务...")
+                # 根据配置决定使用本地文件服务还是公共中转服务
+                if self.config.use_transfer_sh:
+                    # 使用公共中转服务 (tmpfiles.org)
+                    logger.info("use_transfer_sh 已开启，使用 tmpfiles.org 上传...")
+                    stable_url = await transfer.upload_to_tmpfiles(self.session, local_path)
+                else:
+                    # 使用内置文件服务
+                    logger.info("use_transfer_sh 已关闭，使用内置文件服务注册...")
+                    stable_url = await file_component.register_to_file_service()
 
-                # 注意如果本地文件已经存在，注册文件服务会自动获取本地路径，不会再下载一次文件
-                stable_url = await file_component.register_to_file_service()
-                
                 if not stable_url:
-                    await event.send(event.plain_result("错误：文件服务未能返回有效的 URL。"))
+                    await event.send(event.plain_result("错误：文件上传或注册失败，无法获取有效的 URL。"))
                     controller.stop()
                     return
-
 
                 logger.info(f"文件服务返回的稳定 URL: {stable_url}")
 

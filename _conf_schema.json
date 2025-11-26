@@ -1,0 +1,8 @@
+{
+    "use_file_transfer": {
+        "type": "bool",
+        "description": "customskin使用的模型文件中转服务",
+        "hint": "是否使用 tmpfiles.org 中转模型文件。如果您的机器人没有公网IP并且未配置AstrBot的回调接口地址，请开启此项。开启此项会将文件上传到公共服务器，可能存在数据泄露风险。如果知道如何配置回调地址，建议关闭此项以使用本地文件服务。",
+        "default": true
+    }
+}
