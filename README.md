@@ -16,7 +16,13 @@ git clone https://github.com/SatellIta/astrbot_plugin_minecraft_skin_render
 
 安装依赖
 
-无论使用哪种方法，插件的依赖都会在机器人下次重启时自动安装。
+进入 plugins/astrbot_plugin_minecraft_skin_render/ 目录，然后执行
+
+```bash
+pip install -r requirements.txt
+```
+
+如果不想手动安装依赖，插件的依赖会在机器人下次重启时自动安装。
 
 # 🚀 使用说明
 
@@ -31,9 +37,14 @@ git clone https://github.com/SatellIta/astrbot_plugin_minecraft_skin_render
 - `/skin Notch` - 默认全身渲染
 - `/skin walking Notch` - 行走动作的全身渲染
 
+## 指令2：随机皮肤预览
+`/randomskin`
+
+功能：从 NameMC 的随机皮肤入口抓取一个随机皮肤，解析出该皮肤关联的第一个玩家名称，然后使用该名称来获取玩家 UUID 并生成默认的皮肤渲染预览。
+
 ---
 
-## 指令2：生成壁纸
+## 指令3：生成壁纸
 `/wallpaper [wallpaper_id] <玩家名1> [玩家名2] [玩家名3]`
 
 ### 参数
@@ -54,7 +65,7 @@ git clone https://github.com/SatellIta/astrbot_plugin_minecraft_skin_render
 
 ---
 
-## 指令3：自定义模型渲染
+## 指令4：自定义模型渲染
 `/customskin <username> [camera_preset] [focal_preset]`
 
 ### 参数

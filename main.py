@@ -15,7 +15,7 @@ from . import actions, config, utils, help, transfer
     "MCSkinRender",
     "SatellIta",
     "使用 Starlight API 异步获取 Minecraft 皮肤的多种渲染图和动作",
-    "1.1.1",
+    "1.1.2",
     "https://github.com/SatellIta/astrbot_plugin_minecraft_skin_render"
 )
 class MCSkinPlugin(Star):
@@ -278,3 +278,16 @@ class MCSkinPlugin(Star):
         """插件卸载/停止时，异步关闭 session"""
         await self.session.close()
         logger.info("MCSkinPlugin: aiohttp session 已成功关闭")
+
+    @filter.command("randomskin")
+    async def random_skin(self, event: AstrMessageEvent):
+        """
+        /randomskin
+        从 NameMC 获取一个随机皮肤，提取玩家名称并渲染默认皮肤预览。
+        """
+        result = await actions.process_randomskin_command(self.session)
+
+        if isinstance(result, str):
+            yield event.plain_result(result)
+        else:
+            yield event.chain_result(result)

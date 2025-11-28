@@ -3,6 +3,8 @@ from astrbot.api import logger
 import astrbot.api.message_components as Comp
 import json
 from urllib.parse import urlencode
+import re
+import asyncio
 
 from . import utils, config
 
@@ -30,6 +32,68 @@ async def process_skin_command(session: aiohttp.ClientSession, username: str, re
         Comp.Image.fromURL(url=render_url)
     ]
     return chain
+
+
+async def process_randomskin_command(session: aiohttp.ClientSession) -> list | str:
+    """
+    从 NameMC 随机皮肤页面获取一个随机皮肤，解析第一个玩家名称，获取 UUID 并返回默认皮肤渲染链。
+
+    使用 curl_cffi 的同步请求包装在线程中运行以绕过 Cloudflare。
+    """
+    try:
+        # 延迟导入，避免没有依赖时启动失败
+        from curl_cffi import requests
+    except Exception as e:
+        logger.error(f"缺少 curl_cffi 库或导入失败: {e}")
+        return "错误：服务器未安装或无法加载 'curl_cffi' 库，无法访问 NameMC 随机皮肤页面。"
+
+    headers = config.DEFAULT_HEADER
+
+    def fetch_text(url: str) -> str:
+        # 使用 chrome120 指纹
+        resp = requests.get(url, headers=headers, impersonate="chrome120", timeout=20)
+        resp.raise_for_status()
+        text = resp.text
+        if "<title>Just a moment...</title>" in text:
+            raise Exception("被 Cloudflare 5秒盾拦截")
+        return text
+
+    # 获取随机皮肤页面
+    try:
+        html = await asyncio.to_thread(fetch_text, config.NAMEMC_RAMDOM)
+    except Exception as e:
+        logger.error(f"从 NameMC 获取随机页面失败: {e}")
+        return f"错误：无法从 NameMC 获取随机皮肤，请稍后再试。({e})"
+
+    # 解析 skin id
+    m = re.search(r'href="/skin/([A-Za-z0-9_-]+)"', html)
+    if not m:
+        logger.error("在 NameMC 随机页面中未找到 skin id")
+        return "错误：未能从 NameMC 随机页面解析出皮肤 ID。"
+    skinid = m.group(1)
+    skin_url = config.NAMEMC_SKIN.format(skinid=skinid)
+
+    # 请求皮肤页面并解析第一个玩家名
+    try:
+        skin_html = await asyncio.to_thread(fetch_text, skin_url)
+    except Exception as e:
+        logger.error(f"获取 NameMC 皮肤页面失败 ({skin_url}): {e}")
+        return f"错误：无法访问 NameMC 的皮肤页面，请稍后再试。({e})"
+
+    # 尝试解析玩家名
+    player = None
+    m2 = re.search(r'/profile/([A-Za-z0-9_]{1,16})', skin_html)
+    if m2:
+        player = m2.group(1)
+
+    if not player:
+        logger.error("未能从皮肤页面解析出玩家名称")
+        return "错误：未能从 NameMC 的皮肤页面解析出玩家名称。"
+
+    logger.info(f"从 NameMC 解析到玩家: {player} (skinid={skinid})")
+
+    # 4) 使用默认渲染类型生成结果
+    return await process_skin_command(session, player, 'default')
 
 async def upload_and_render_custom_skin(
     session: aiohttp.ClientSession,
