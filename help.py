@@ -1,4 +1,3 @@
-import json
 from . import config
 
 def get_help_text() -> str:
@@ -7,81 +6,61 @@ def get_help_text() -> str:
     """
     # /skin 指令帮助
     help_text = (
-        "--- Minecraft 皮肤渲染插件帮助 ---\n\n"
+        "--- Minecraft 皮肤渲染插件帮助 ---\n"
+        "渲染服务: nmsr.nickac.dev (NickAc's Minecraft Skin Renderer)\n\n"
         "【指令1】/skin <param1> [param2]\n"
         "用法1: /skin <玩家名称>\n"
         "  » 示例: /skin Notch\n"
         f"  <玩家名称>: 必需。玩家的 Minecraft ID 或者 UUID。\n\n"
         "用法2 (推荐): /skin <渲染类型> <玩家名称>\n"
-        "  » 示例: /skin walking Notch\n"
+        "  » 示例: /skin head Notch\n"
         f"  <渲染类型>: 可选。默认为 '{config.DEFAULT_RENDERTYPE}'。\n\n"
         "--- 所有可用的 [rendertype] 列表 ---\n"
     )
     
-    # 渲染类型列表（按字母顺序排序）
-    types_str = ", ".join(sorted(config.VALID_RENDERTYPES))
+    # 渲染类型列表（按字母顺序排序，带中文描述）
+    types_lines = []
+    for name in sorted(config.VALID_RENDERTYPES):
+        desc = config.NMSR_RENDERTYPE_INFO.get(name, "")
+        if desc:
+            types_lines.append(f"  • {name} — {desc}")
+        else:
+            types_lines.append(f"  • {name}")
+    types_str = "\n".join(types_lines)
     
     # /randomskin 指令帮助
     randomskin_help = (
         "\n\n【指令2】/randomskin\n"
-        "  功能: 从 NameMC 随机获取一个皮肤并提取对应玩家名称，随后生成该玩家的默认皮肤渲染预览。\n"
+        "  功能: 从 NameMC 随机获取一个皮肤并提取对应玩家名称，随后生成该玩家的全身渲染预览。\n"
     )
 
     # /wallpaper 指令帮助
     wallpaper_help = (
-        "\n【指令3】/wallpaper [param1] [param2] ...\n"
-        "用法1 (推荐): /wallpaper <壁纸ID> <玩家1> [玩家2] ...\n"
-        "  » 示例: /wallpaper quick_hide Notch\n\n"
-        "用法2: /wallpaper <玩家1> [玩家2] ...\n"
-        "  » 示例: /wallpaper Notch Steve\n"
-        f"  <壁纸ID>: 可选。默认为 '{config.DEFAULT_WALLPAPER}'。\n"
-        "  <玩家...>: 必需。至少1个玩家名称。\n\n"
-        "--- 可用的壁纸ID及玩家上限 ---\n"
+        "\n\n【指令3】/wallpaper [param1] [param2] ...\n"
+        "  [已废弃] 壁纸功能暂不可用。\n"
+        "  原因：原渲染服务器 Starlight Skins 已宕机，nmsr 不支持壁纸功能。\n"
     )
-    
-    # 壁纸列表（按字母顺序排序，带上限说明）
-    wallpaper_list = []
-    for wp_id, max_p in sorted(config.WALLPAPER_CONFIGS.items()):
-        wallpaper_list.append(f"  • {wp_id} (最多 {max_p} 个玩家)")
-    wallpapers_str = "\n".join(wallpaper_list)
     
     # /customskin 指令帮助
     customskin_help = (
-        "\n\n【指令4】/customskin <玩家名称> [相机预设] [焦点预设]\n"
-        "  » 示例1: /customskin Notch front front\n"
-        "  » 示例2: /customskin Notch {\"x\":\"11.92\",\"y\":\"15.81\",\"z\":\"-29.71\"} {\"x\":\"0.31\",\"y\":\"18.09\",\"z\":\"1.32\"}\n"
-        "  功能: 使用你提供的 .obj 模型文件来渲染指定玩家的皮肤。\n"
-        "  流程: 发送指令后，按提示在15秒内上传模型文件即可。\n"
-        "  参数: [相机预设] 和 [焦点预设] 是可选的，可以使用预设名称或自定义JSON。\n"
-        "  详情: 发送 /customskinhelp 查看所有可用预设。"
+        "\n【指令4】/customskin <玩家名称> [相机预设] [焦点预设]\n"
+        "  [已废弃] 自定义模型渲染功能暂不可用。\n"
+        "  原因：原渲染服务器 Starlight Skins 已宕机，nmsr 不支持自定义模型上传。\n"
+        "  如需此功能，可自行部署 nmsr-rs: https://github.com/NickAcPT/nmsr-rs\n"
     )
     
     # 返回合并后的帮助信息
-    return help_text + types_str + randomskin_help + wallpaper_help + wallpapers_str + customskin_help
+    return help_text + types_str + randomskin_help + wallpaper_help + customskin_help
 
 def get_customskin_help_text() -> str:
     """
-    生成 /customskin 指令的详细帮助，包含所有预设列表。
+    生成 /customskin 指令的详细帮助。
+    [已废弃] 自定义渲染功能
     """
-    help_text = "--- /customskin 详细帮助 ---\n\n"
-    help_text += "指令用法: /customskin <玩家名称> [相机预设] [焦点预设]\n"
-    help_text += "参数可以是预设名称 (如下所列)，也可以是自定义的JSON字符串。\n\n"
-
-    # 1. 相机预设
-    help_text += "【可用的相机预设】\n"
-    camera_list = []
-    for name, data in sorted(config.CAMERA_PRESETS.items()):
-        # 使用 json.dumps 保证格式一致且美观
-        data_str = json.dumps(data)
-        camera_list.append(f"  • {name}: {data_str}")
-    help_text += "\n".join(camera_list)
-
-    # 2. 焦点预设
-    help_text += "\n\n【可用的焦点预设】\n"
-    focal_list = []
-    for name, data in sorted(config.FOCAL_PRESETS.items()):
-        data_str = json.dumps(data)
-        focal_list.append(f"  • {name}: {data_str}")
-    help_text += "\n".join(focal_list)
-    
-    return help_text
+    return (
+        "--- /customskin 详细帮助 ---\n\n"
+        "自定义模型渲染功能暂不可用。\n"
+        "原因：原渲染服务器 Starlight Skins 已宕机，新的渲染服务 nmsr 不支持自定义模型上传。\n\n"
+        "如需此功能，可以自行部署 nmsr-rs: https://github.com/NickAcPT/nmsr-rs\n"
+        "部署后修改 config.py 中的 NMSR_BASE_URL 为自己的服务地址即可。"
+    )
