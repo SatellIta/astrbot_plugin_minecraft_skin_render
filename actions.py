@@ -51,8 +51,10 @@ async def process_randomskin_command(session: aiohttp.ClientSession) -> list | s
     headers = config.DEFAULT_HEADER
 
     def fetch_text(url: str) -> str:
-        # 使用 chrome120 指纹
-        resp = requests.get(url, headers=headers, impersonate="chrome120", timeout=20)
+        # 使用 safari17_0 指纹。
+        # 注意：NameMC 的 Cloudflare 目前会拦截 curl_cffi 的 chrome120 等 Chrome 指纹
+        # （返回 403 + "Just a moment..."），Safari 指纹可正常通过（curl_cffi >= 0.6.0）。
+        resp = requests.get(url, headers=headers, impersonate="safari17_0", timeout=20)
         resp.raise_for_status()
         text = resp.text
         if "<title>Just a moment...</title>" in text:

@@ -1,2 +1,2 @@
 aiohttp>=3.8.0
-curl_cffi
+curl_cffi>=0.6.0
