@@ -1,8 +1,14 @@
 {
+    "render_server_url": {
+        "type": "string",
+        "description": "渲染服务器地址",
+        "hint": "Minecraft 皮肤渲染服务器的基础 URL。默认为 nmsr.nickac.dev 公共实例。如果你自己部署了 nmsr-rs，改为 http://localhost:8080 或你的服务器地址即可。注意不要带末尾斜杠。",
+        "default": "https://nmsr.nickac.dev"
+    },
     "use_file_transfer": {
         "type": "bool",
-        "description": "customskin使用的模型文件中转服务",
-        "hint": "是否使用 tmpfiles.org 中转模型文件。如果您的机器人没有公网IP并且未配置AstrBot的回调接口地址，请开启此项。开启此项会将文件上传到公共服务器，可能存在数据泄露风险。如果知道如何配置回调地址，建议关闭此项以使用本地文件服务。",
+        "description": "customskin使用的模型文件中转服务（已废弃）",
+        "hint": "customskin 功能已废弃（nmsr 不支持自定义模型上传），此项保留仅供将来使用。",
         "default": true
     }
 }
