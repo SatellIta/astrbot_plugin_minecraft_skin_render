@@ -12,7 +12,7 @@ from . import config as plugin_config
     "MCSkinRender",
     "SatellIta",
     "使用 nmsr API 异步获取 Minecraft 玩家皮肤的多种渲染图",
-    "1.2.0",
+    "1.2.1",
     "https://github.com/SatellIta/astrbot_plugin_minecraft_skin_render"
 )
 class MCSkinPlugin(Star):
